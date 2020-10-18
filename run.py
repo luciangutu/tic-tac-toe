@@ -27,6 +27,7 @@ board_mapping = {1: [0, 0],
                  9: [2, 2]
                  }
 
+moves = 9
 
 ################################################
 # https://stackoverflow.com/a/3041990/12075722
@@ -73,34 +74,32 @@ def show_board(this_board):
 
 
 ########################
-# validating the move
-########################
-def check_move(this_move):
-    # validate out of board or places on existing pieces
-    if 0 < this_move < 10 and str(board[board_mapping[this_move][0]][board_mapping[this_move][1]]).isdigit():
-        board[board_mapping[this_move][0]][board_mapping[this_move][1]] = piece
-    else:
-        print("Illegal place to move {}!".format(this_move))
-        where_to_move(piece)
-
-
-########################
 # pick a place to move
 ########################
 def where_to_move(this_piece):
-    show_board(board)
-    global ai
-    if ai:
-        number = random.randint(1, 9)
-        print("AI moves the piece {} to {}".format(piece, number))
-        check_move(number)
-
-    else:
-        move_here = raw_input("Where do you want to place your piece {}? ".format(this_piece))
-        if move_here.isdigit():
-            check_move(int(move_here))
+    global ai, moves
+    move_ok = False
+    while not move_ok:
+        show_board(board)
+        if ai:
+            number = random.randint(1, 9)
+            print("AI moves the piece {} to {}".format(piece, number))
+            # is the chosen number in the board?
+            if any(number in k for k in board):
+                board[board_mapping[number][0]][board_mapping[number][1]] = piece
+                move_ok = True
+                moves -= 1
+            else:
+                print("Illegal move!")
         else:
-            where_to_move(this_piece)
+            move_here = raw_input("Where do you want to place your piece {}? ".format(this_piece))
+            # is the chosen number in the board?
+            if move_here.isdigit() and any(int(move_here) in k for k in board):
+                board[board_mapping[int(move_here)][0]][board_mapping[int(move_here)][1]] = piece
+                move_ok = True
+                moves -= 1
+            else:
+                print("Illegal move!")
 
 
 ########################
@@ -123,21 +122,24 @@ def switch_player(this_piece):
 # check if player won
 ########################
 def check_win():
-    match_v = match_h = match_d1 = match_d2 = 0
-    for x in range(len(board)-1):
-        for y in range(len(board)-1):
-            if board[x][y] == board[x][y+1]:
-                match_h += 1
-            if board[x][y] == board[x+1][y]:
-                match_v += 1
-            if board[0][0] == board[x+1][y+1] and x == y:
-                match_d1 += 1
-            if board[0][2] == board[x+1][x-1]:
-                match_d2 += 1
-    if match_v >= 2 or match_h >= 2 or match_d1 >= 2 or match_d2 >= 2:
+    # horizontal and vertical checks
+    for x in range(len(board)):
+        if board[x][0] == board[x][1] == board[x][2]:
+            return True
+        if board[0][x] == board[1][x] == board[2][x]:
+            return True
+    # diagonals checks
+    x = 0
+    if board[x][x] == board[x+1][x+1] == board[x+2][x+2]:
         return True
-    else:
-        return False
+    if board[x][x+2] == board[x+1][x+1] == board[x+2][x]:
+        return True
+    # if we have the board full
+    # this can be replaced with nested for loops anc check if each board piece is not x or o
+    if moves <= 0:
+        show_board(board)
+        print("DRAW!")
+        exit(0)
 
 
 ########################
