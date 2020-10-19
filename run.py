@@ -7,10 +7,6 @@
 import random
 import sys
 
-dummy_board = [["", "", ""],
-         ["", "", ""],
-         ["", "", ""]]
-
 board = [[1, 2, 3],
          [4, 5, 6],
          [7, 8, 9]]
@@ -27,7 +23,6 @@ board_mapping = {1: [0, 0],
                  9: [2, 2]
                  }
 
-moves = 9
 
 ################################################
 # https://stackoverflow.com/a/3041990/12075722
@@ -69,37 +64,91 @@ def query_yes_no(question, default="yes"):
 # return the board
 ########################
 def show_board(this_board):
-    for p in this_board:
-        print(p)
+    for i in range(len(this_board)):
+        for j in range(len(this_board)):
+            print(this_board[i][j]),
+            if j == 2:
+                print("")
 
 
 ########################
 # pick a place to move
 ########################
-def where_to_move(this_piece):
-    global ai, moves
+def where_to_move(this_piece, this_board):
+    global ai
     move_ok = False
     while not move_ok:
-        show_board(board)
+        show_board(this_board)
         if ai:
-            number = random.randint(1, 9)
-            print("AI moves the piece {} to {}".format(piece, number))
-            # is the chosen number in the board?
-            if any(number in k for k in board):
-                board[board_mapping[number][0]][board_mapping[number][1]] = piece
-                move_ok = True
-                moves -= 1
+            # pick a random move from the available moves
+            if len(get_possible_moves(this_board)) > 8:
+                move_here = random.choice(get_possible_moves(this_board))
             else:
-                print("Illegal move!")
+                move_here = minimax(this_board, random.choice(get_possible_moves(this_board)), piece, 3)[0]
+            print("AI moves the piece {} to {}".format(piece, move_here))
+            this_board[board_mapping[move_here][0]][board_mapping[move_here][1]] = piece
+            move_ok = True
         else:
             move_here = raw_input("Where do you want to place your piece {}? ".format(this_piece))
+            print("===========================")
             # is the chosen number in the board?
-            if move_here.isdigit() and any(int(move_here) in k for k in board):
-                board[board_mapping[int(move_here)][0]][board_mapping[int(move_here)][1]] = piece
+            if move_here.isdigit() and any(int(move_here) in k for k in this_board):
+                this_board[board_mapping[int(move_here)][0]][board_mapping[int(move_here)][1]] = piece
                 move_ok = True
-                moves -= 1
             else:
                 print("Illegal move!")
+
+
+##########################
+# return opponent's piece
+##########################
+def opponent(flip):
+    return "o" if flip == "x" else "x"
+
+
+########################
+# MiniMax algorithm
+########################
+def minimax(this_board, this_move, this_piece, depth):
+    best_score = 0
+    best_move = this_move
+
+    if depth == 0 or check_win(this_board)[0] == "WIN" or not get_possible_moves(this_board):
+        if check_win(this_board)[1] == piece:
+            score = 100
+            print(check_win(this_board), piece)
+        elif check_win(this_board)[1] == opponent(piece):
+            score = 101
+            print(check_win(this_board), piece)
+        else:
+            print("this is the bottom")
+            show_board(this_board)
+            score = 10 / (len(get_possible_moves(this_board)) + 1)
+        return [this_move, score]
+
+    for move in get_possible_moves(this_board):
+        # test this move
+        this_board[board_mapping[move][0]][board_mapping[move][1]] = this_piece
+        curr_move, score = minimax(this_board, move, opponent(this_piece), depth - 1)
+        print("Score", score, "best score", best_score, "and move", move, "and best_move", best_move, "piece", piece)
+        show_board(this_board)
+        best_score = max(score, best_score)
+        if best_score == score:
+            best_move = curr_move
+        # revert the move tested above
+        this_board[board_mapping[move][0]][board_mapping[move][1]] = move
+    return [best_move, best_score]
+
+
+########################
+# get possible moves
+########################
+def get_possible_moves(this_board):
+    k = []
+    for i in range(1, 10):
+        if any(i in j for j in this_board):
+            k.append(i)
+    return k
 
 
 ########################
@@ -121,25 +170,23 @@ def switch_player(this_piece):
 ########################
 # check if player won
 ########################
-def check_win():
+def check_win(this_board):
     # horizontal and vertical checks
-    for x in range(len(board)):
-        if board[x][0] == board[x][1] == board[x][2]:
-            return True
-        if board[0][x] == board[1][x] == board[2][x]:
-            return True
+    for x in range(len(this_board)):
+        if this_board[x][0] == this_board[x][1] == this_board[x][2]:
+            return "WIN", this_board[x][0]
+        if this_board[0][x] == this_board[1][x] == this_board[2][x]:
+            return "WIN", this_board[0][x]
     # diagonals checks
     x = 0
-    if board[x][x] == board[x+1][x+1] == board[x+2][x+2]:
-        return True
-    if board[x][x+2] == board[x+1][x+1] == board[x+2][x]:
-        return True
+    if this_board[x][x] == this_board[x+1][x+1] == this_board[x+2][x+2]:
+        return "WIN", this_board[x][x]
+    if this_board[x][x+2] == this_board[x+1][x+1] == this_board[x+2][x]:
+        return "WIN", this_board[x][x+2]
     # if we have the board full
-    # this can be replaced with nested for loops anc check if each board piece is not x or o
-    if moves <= 0:
-        show_board(board)
-        print("DRAW!")
-        exit(0)
+    if not get_possible_moves(this_board):
+        return "DRAW", 0
+    return 0, 0
 
 
 ########################
@@ -159,14 +206,16 @@ while not win:
     if ai and first_round:
         piece = switch_player(piece)
         ai = True
-        where_to_move(piece)
+        where_to_move(piece, board)
         piece = switch_player(piece)
     first_round = False
-    where_to_move(piece)
-    if check_win():
+    where_to_move(piece, board)
+    if check_win(board)[0] == "WIN":
         show_board(board)
-        print("Player {} WON!".format(piece))
+        print("Player {} WON!".format(check_win(board)[1]))
+        win = True
+    elif check_win(board)[0] == "DRAW":
+        show_board(board)
+        print("DRAW!")
         win = True
     piece = switch_player(piece)
-
-
