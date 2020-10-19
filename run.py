@@ -24,9 +24,9 @@ board_mapping = {1: [0, 0],
                  }
 
 
-################################################
-# https://stackoverflow.com/a/3041990/12075722
-################################################
+##########################################################
+# Taken from https://stackoverflow.com/a/3041990/12075722
+##########################################################
 def query_yes_no(question, default="yes"):
     """Ask a yes/no question via raw_input() and return their answer.
 
@@ -64,6 +64,13 @@ def query_yes_no(question, default="yes"):
 # return the board
 ########################
 def show_board(this_board):
+    """
+    Prints the board
+    Where:
+    :this_board: the board to move the piece on
+    Returns:
+    Prints the board
+    """
     for i in range(len(this_board)):
         for j in range(len(this_board)):
             print(this_board[i][j]),
@@ -75,6 +82,14 @@ def show_board(this_board):
 # pick a place to move
 ########################
 def where_to_move(this_piece, this_board):
+    """
+    Move the 'x' or 'o' to the board
+    Where:
+    :this_piece: piece to move
+    :this_board: the board to move the piece on
+    Returns:
+    nothing
+    """
     global ai
     move_ok = False
     while not move_ok:
@@ -103,6 +118,13 @@ def where_to_move(this_piece, this_board):
 # return opponent's piece
 ##########################
 def opponent(flip):
+    """
+    Switches the player turn. Can be merged with switch_player()
+    Where:
+    :flip: piece to switch
+    Returns:
+    switched piece
+    """
     return "o" if flip == "x" else "x"
 
 
@@ -110,19 +132,25 @@ def opponent(flip):
 # MiniMax algorithm
 ########################
 def minimax(this_board, this_move, this_piece, depth):
+    """
+    AI that should choose the best move.
+    Where:
+    :this_board: current board
+    :this_move: current move to try
+    :this_piece: what player is trying the move? x or o
+    :depth: tree depth to search
+    Returns:
+    a list with [move, score]
+    """
     best_score = 0
     best_move = this_move
 
     if depth == 0 or check_win(this_board)[0] == "WIN" or not get_possible_moves(this_board):
         if check_win(this_board)[1] == piece:
             score = 100
-            print(check_win(this_board), piece)
         elif check_win(this_board)[1] == opponent(piece):
             score = 101
-            print(check_win(this_board), piece)
         else:
-            print("this is the bottom")
-            show_board(this_board)
             score = 10 / (len(get_possible_moves(this_board)) + 1)
         return [this_move, score]
 
@@ -130,8 +158,6 @@ def minimax(this_board, this_move, this_piece, depth):
         # test this move
         this_board[board_mapping[move][0]][board_mapping[move][1]] = this_piece
         curr_move, score = minimax(this_board, move, opponent(this_piece), depth - 1)
-        print("Score", score, "best score", best_score, "and move", move, "and best_move", best_move, "piece", piece)
-        show_board(this_board)
         best_score = max(score, best_score)
         if best_score == score:
             best_move = curr_move
@@ -144,6 +170,13 @@ def minimax(this_board, this_move, this_piece, depth):
 # get possible moves
 ########################
 def get_possible_moves(this_board):
+    """
+    Returns the available moves from the board
+    Where:
+    :this_board: current board
+    Returns:
+    a list with [moves]
+    """
     k = []
     for i in range(1, 10):
         if any(i in j for j in this_board):
@@ -155,22 +188,32 @@ def get_possible_moves(this_board):
 # switch players
 ########################
 def switch_player(this_piece):
+    """
+    Switches the player turn and AI
+    Where:
+    :this_piece: piece to switch
+    Returns:
+    switched piece
+    """
     global ai
     if ai:
         ai = False
     else:
         ai = True
-    if this_piece == "x":
-        this_piece = "o"
-    else:
-        this_piece = "x"
-    return this_piece
+    return opponent(this_piece)
 
 
 ########################
 # check if player won
 ########################
 def check_win(this_board):
+    """
+    Check if someone won
+    Where:
+    :this_board: current board
+    Returns:
+    WIN/DRAW, piece/0
+    """
     # horizontal and vertical checks
     for x in range(len(this_board)):
         if this_board[x][0] == this_board[x][1] == this_board[x][2]:
